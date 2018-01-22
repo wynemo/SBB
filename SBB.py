@@ -10,6 +10,7 @@ Based on these HTML files, you might generate an ebook by importing into Calibre
 Or simply save them anywhere as archives.
 '''
 
+import os
 import sys, urllib2
 from time import strftime
 
@@ -35,6 +36,15 @@ except :
 if strUserInput.find("http://blog.sina.com.cn/") == -1 or len(strUserInput) <= 24 :
   print strUsage
   sys.exit(0)
+  
+arrLocalFiles = set()
+for each in os.listdir('.'):
+  if os.path.isdir(each):
+    continue
+  if not each.startswith('Post_'):
+    continue
+  localFile = each.replace('Post_', '')
+  arrLocalFiles.add(localFile)
 
 #Get UID for the blog, UID is critical.
 objResponse = urllib2.urlopen(strUserInput)
@@ -92,31 +102,38 @@ strHTML4Index = ""
 
 for strCurrentBlogPostID in arrBlogPost :
   intCounter  = intCounter + 1
-  strTargetBlogPostURL = "http://blog.sina.com.cn/s/blog_" + strCurrentBlogPostID + ".html"
-  objResponse = urllib2.urlopen(strTargetBlogPostURL)
-  strPageCode = objResponse.read()
-  objResponse.close()
+  strLocalFilename = "Post_" + strCurrentBlogPostID + ".html"
+  if strCurrentBlogPostID in arrLocalFiles:
+    print intCounter, 'already downloaded'
+    with open(strLocalFilename) as f:
+      strPageCode = f.read()
+    strBlogPostTitle = getBetween(strPageCode, "<title>", "</title>")
+  else:
+    strTargetBlogPostURL = "http://blog.sina.com.cn/s/blog_" + strCurrentBlogPostID + ".html"
+    objResponse = urllib2.urlopen(strTargetBlogPostURL)
+    strPageCode = objResponse.read()
+    objResponse.close()
 
-  #Parse blog title
-  strBlogPostTitle = getBetween(strPageCode, "<title>", "</title>")
-  strBlogPostTitle = strBlogPostTitle.replace("_新浪博客", "")
-  strBlogPostTitle = strBlogPostTitle.replace("_" + strBlogName, "")
+    #Parse blog title
+    strBlogPostTitle = getBetween(strPageCode, "<title>", "</title>")
+    strBlogPostTitle = strBlogPostTitle.replace("_新浪博客", "")
+    strBlogPostTitle = strBlogPostTitle.replace("_" + strBlogName, "")
 
-  #Parse blog post
-  strBlogPostBody  = getBetween(strPageCode, "<!-- 正文开始 -->", "<!-- 正文结束 -->")
-  strBlogPostBody  = strBlogPostBody.replace("http://simg.sinajs.cn/blog7style/images/common/sg_trans.gif", "")
-  strBlogPostBody  = strBlogPostBody.replace('src=""', "")
-  strBlogPostBody  = strBlogPostBody.replace("real_src =", "src =")
+    #Parse blog post
+    strBlogPostBody  = getBetween(strPageCode, "<!-- 正文开始 -->", "<!-- 正文结束 -->")
+    strBlogPostBody  = strBlogPostBody.replace("http://simg.sinajs.cn/blog7style/images/common/sg_trans.gif", "")
+    strBlogPostBody  = strBlogPostBody.replace('src=""', "")
+    strBlogPostBody  = strBlogPostBody.replace("real_src =", "src =")
 
-  #Parse blog timestamp
-  strBlogPostTime  = getBetween(strPageCode, '<span class="time SG_txtc">(', ')</span><div class="turnBoxzz">')
+    #Parse blog timestamp
+    strBlogPostTime  = getBetween(strPageCode, '<span class="time SG_txtc">(', ')</span><div class="turnBoxzz">')
 
-  #Write into local file
-  strLocalFilename = "Post_" + str(intCounter) + "_" + strCurrentBlogPostID + ".html"
-  strHTML4Post = "<html>\n<head>\n<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />\n<title>" + strBlogPostTitle + "</title>\n<link href=""http://simg.sinajs.cn/blog7style/css/conf/blog/article.css"" type=""text/css"" rel=""stylesheet"" />\n</head>\n<body>\n<h2>" + strBlogPostTitle + "</h2>\n<p>By: <em>" + strBlogName + "</em> 原文发布于：<em>" + strBlogPostTime + "</em></p>\n" + strBlogPostBody + "\n<p><a href=""index.html"">返回目录</a></p>\n</body>\n</html>"
-  objFileArticle = open(strLocalFilename, "w")
-  objFileArticle.write(strHTML4Post);
-  objFileArticle.close
+    #Write into local file
+    
+    strHTML4Post = "<html>\n<head>\n<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />\n<title>" + strBlogPostTitle + "</title>\n<link href=""http://simg.sinajs.cn/blog7style/css/conf/blog/article.css"" type=""text/css"" rel=""stylesheet"" />\n</head>\n<body>\n<h2>" + strBlogPostTitle + "</h2>\n<p>By: <em>" + strBlogName + "</em> 原文发布于：<em>" + strBlogPostTime + "</em></p>\n" + strBlogPostBody + "\n<p><a href=""index.html"">返回目录</a></p>\n</body>\n</html>"
+    objFileArticle = open(strLocalFilename, "w")
+    objFileArticle.write(strHTML4Post);
+    objFileArticle.close
 
   strHTML4Index = strHTML4Index + '<li><a href="' + strLocalFilename + '">' + strBlogPostTitle + '</a></li>\n'
 
