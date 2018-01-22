@@ -43,7 +43,7 @@ for each in os.listdir('.'):
     continue
   if not each.startswith('Post_'):
     continue
-  localFile = each.replace('Post_', '')
+  localFile = each.replace('Post_', '').replace('.html', '')
   arrLocalFiles.add(localFile)
 
 #Get UID for the blog, UID is critical.
